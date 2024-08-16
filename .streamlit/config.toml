@@ -1,0 +1,25 @@
+[client]
+# Control whether uncaught application exceptions and deprecation warnings
+# are shown in the browser. By default, the value is True, and Streamlit
+# shows application exceptions and the associated tracebacks,
+# and deprecation warnings in the browser.
+# If this is set to False, deprecation warnings and full exception messages
+# will only be printed in the console. The exceptions will still appear in the
+# browser with a generic error message.
+# Default: true
+showErrorDetails = true
+
+# Control the visibility of the toolbar, options menu, and settings dialog (at the top-right of the app).
+# Allowed values:
+# * "auto" : Show developer options if the app is accessed via
+# localhost or via Streamlit Community Cloud as a developer. Hide otherwise.
+# * "developer" : Show developer options.
+# * "viewer" : Hide developer options.
+# * "minimal" : Show only externally defined options (e.g., via Streamlit Community Cloud)
+# or by st.set_page_config. If there are no options, hide the menu.
+toolbarMode = "auto"
+
+# Control whether the default navigation sidebar is shown in a multi-page application.
+# This only applies when the app's pages are defined by the `pages/` directory.
+# Default: true
+showSidebarNavigation = false
