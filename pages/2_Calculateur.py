@@ -9,84 +9,113 @@ import joblib
 # Fonction de prétraitement des données
 def treatInput(test):
     try:
-        categorical_columns = ['Region', 'Brand','Power',"Gas"]
+        categorical_columns = ['Region', 'Brand', 'Power', "Gas"]
 
+        # Load reference dataset
         toFit = pd.read_csv("variables.csv")
+        print("Loaded reference dataset:")
+        print(toFit.head())
 
-        # Initialisation du OneHotEncoder
-        encoder = OneHotEncoder(sparse=False)
-        # Application de l'encodage
+        # Validate columns
+        missing_columns = [col for col in categorical_columns if col not in toFit.columns]
+        if missing_columns:
+            raise ValueError(f"Missing columns in variables.csv: {missing_columns}")
 
+        # Initialize and fit encoder
+        encoder = OneHotEncoder(sparse_output=False)
         toFitdata = encoder.fit_transform(toFit[categorical_columns])
+        print("OneHotEncoder fitted successfully.")
+
+        # Transform test data
         encoded_data = encoder.transform(test[categorical_columns])
+        print("OneHotEncoder transformed test data.")
 
-        # Création d'un DataFrame avec les nouvelles colonnes encodées
-        toFitdf = pd.DataFrame(toFitdata, columns=encoder.get_feature_names(categorical_columns))
-        encoded_df = pd.DataFrame(encoded_data, columns=encoder.get_feature_names(categorical_columns))
+        # Create DataFrames for encoded columns
+        toFitdf = pd.DataFrame(toFitdata, columns=encoder.get_feature_names_out(categorical_columns))
+        encoded_df = pd.DataFrame(encoded_data, columns=encoder.get_feature_names_out(categorical_columns))
 
-        # Combinaison avec les autres colonnes non catégorielles
+        # Combine with non-categorical columns
         toFit = pd.concat([toFit.drop(columns=categorical_columns), toFitdf], axis=1)
         X_enc = pd.concat([test.drop(columns=categorical_columns), encoded_df], axis=1)
 
-        print(X_enc.shape)
+        print("Shape after encoding:", X_enc.shape)
 
-        # Créer l'objet StandardScaler
+        # Scale the data
         scaler = MinMaxScaler()
-        # Ajuster le scaler aux données d'entraînement
         scaler.fit(toFit)
         X_scaled = scaler.transform(X_enc)
 
+        # Convert to DataFrame
         X_scaled_df = pd.DataFrame(X_scaled, columns=X_enc.columns)
-        # Convertir le résultat en DataFrame pour faciliter l'utilisation ultérieure
-        X_scaled_df = pd.DataFrame(X_scaled, columns=X_enc.columns)
+        print("Data scaling completed.")
 
-        X_scaled_df.head()
         return X_scaled_df
-    except:
-        exit() 
+
+    except Exception as e:
+        print(f"Error in treatInput: {e}")
+        raise
         
     
    
 
-# Fonction qui gère la prédiction de la prime
+# Function to predict frequency
 def predictFrequence(data):
     print(data.columns)
     try:
-        # Chargement du modèle pré-entraîné C:\Users\EEIA\Desktop\Assurance_project\tweedieModel.pkl
+        # Load the pre-trained frequency model
         with open('modelfrequence.pkl', 'rb') as file:
             print(file)
             model = joblib.load(file)
-            st.write("model de fréquence chargé")
-            print("model de fréquence chargé",model)
+            st.write("Frequency model loaded successfully")
+            print("Frequency model loaded:", model)
             prediction = model.predict(data)
-            print("prediction frequency",prediction)
+            print("Frequency prediction:", prediction)
             if prediction:
                 return prediction[0]
-    except:
-        exit()
+    except FileNotFoundError:
+        st.error("Error: Frequency model file 'modelfrequence.pkl' not found.")
+        raise
+    except joblib.externals.loky.process_executor._RemoteTraceback as model_error:
+        st.error("Error while loading or using the frequency model.")
+        raise model_error
+    except Exception as e:
+        st.error(f"An unexpected error occurred in predictFrequence: {e}")
+        raise
 
-
-# Fonction qui gère la prédiction de la prime
+# Function to predict severity
 def predictSeverity(data):
     print(data)
     try:
-        # Chargement du modèle pré-entraîné C:\Users\EEIA\Desktop\Assurance_project\tweedieModel.pkl
+        # Load the pre-trained severity model
         with open('modelseverite.pkl', 'rb') as file:
             print(file)
             model = joblib.load(file)
-            st.write("model de sévérité chargé")
-            print("model de sévérité chargé",model)
+            st.write("Severity model loaded successfully")
+            print("Severity model loaded:", model)
             prediction = model.predict(data)
-            print("prediction severity",prediction)
+            print("Severity prediction:", prediction)
             if prediction:
-                return prediction[0]*19153.113869661753
-    except:
-        exit()
+                return prediction[0] * 19153.113869661753
+    except FileNotFoundError:
+        st.error("Error: Severity model file 'modelseverite.pkl' not found.")
+        raise
+    except joblib.externals.loky.process_executor._RemoteTraceback as model_error:
+        st.error("Error while loading or using the severity model.")
+        raise model_error
+    except Exception as e:
+        st.error(f"An unexpected error occurred in predictSeverity: {e}")
+        raise
 
+# Function to predict the insurance premium
 def predictPrime(data):
-    frequency = predictFrequence(data)
-    severity = predictSeverity(data)
-    return frequency*severity
+    try:
+        frequency = predictFrequence(data)
+        severity = predictSeverity(data)
+        return frequency * severity
+    except Exception as e:
+        st.error(f"An error occurred during premium prediction: {e}")
+        raise
+
 
 # Configuration de la page
 st.set_page_config(page_title="Caractéristiques de l'Assuré et de l'Automobile", page_icon=":car:")
